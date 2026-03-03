@@ -114,6 +114,130 @@ async function fetchExampleList({ prep, excludeText, count = 3, signal }) {
   return uniq;
 }
 
+// 1) Простые правила управления (B1–B2)
+const PREP_RULES = {
+  // Akkusativ
+  für: {
+    title: "für + Akkusativ",
+    text: "„Für“ verlangt immer den Akkusativ."
+  },
+  durch: {
+    title: "durch + Akkusativ",
+    text: "„Durch“ steht immer mit Akkusativ."
+  },
+  gegen: {
+    title: "gegen + Akkusativ",
+    text: "„Gegen“ verlangt immer den Akkusativ."
+  },
+  ohne: {
+    title: "ohne + Akkusativ",
+    text: "„Ohne“ steht immer mit Akkusativ."
+  },
+  um: {
+    title: "um + Akkusativ",
+    text: "„Um“ verlangt immer den Akkusativ."
+  },
+
+  // Dativ
+  mit: {
+    title: "mit + Dativ",
+    text: "„Mit“ steht immer mit Dativ."
+  },
+  bei: {
+    title: "bei + Dativ",
+    text: "„Bei“ steht mit Dativ."
+  },
+  nach: {
+    title: "nach + Dativ",
+    text: "„Nach“ verlangt den Dativ."
+  },
+  aus: {
+    title: "aus + Dativ",
+    text: "„Aus“ steht mit Dativ."
+  },
+  von: {
+    title: "von + Dativ",
+    text: "„Von“ verlangt den Dativ."
+  },
+  zu: {
+    title: "zu + Dativ",
+    text: "„Zu“ steht mit Dativ."
+  },
+  seit: {
+    title: "seit + Dativ",
+    text: "„Seit“ steht mit Dativ (Zeitangabe)."
+  },
+  gegenüber: {
+    title: "gegenüber + Dativ",
+    text: "„Gegenüber“ steht mit Dativ."
+  },
+
+  // Wechselpräpositionen — общий текст (Wo/Wohin)
+  in: {
+    title: "in (Wechselpräposition)",
+    text: "„In“ ist eine Wechselpräposition: Wo? = Dativ, Wohin? = Akkusativ."
+  },
+  an: {
+    title: "an (Wechselpräposition)",
+    text: "„An“ ist eine Wechselpräposition: Wo? = Dativ, Wohin? = Akkusativ."
+  },
+  auf: {
+    title: "auf (Wechselpräposition)",
+    text: "„Auf“ ist eine Wechselpräposition: Wo? = Dativ, Wohin? = Akkusativ."
+  },
+  unter: {
+    title: "unter (Wechselpräposition)",
+    text: "„Unter“ ist eine Wechselpräposition: Wo? = Dativ, Wohin? = Akkusativ."
+  },
+  über: {
+    title: "über (Wechselpräposition)",
+    text: "„Über“ ist eine Wechselpräposition: Wo? = Dativ, Wohin? = Akkusativ."
+  },
+  vor: {
+    title: "vor (Wechselpräposition)",
+    text: "„Vor“ ist eine Wechselpräposition: Wo? = Dativ, Wohin? = Akkusativ."
+  },
+  hinter: {
+    title: "hinter (Wechselpräposition)",
+    text: "„Hinter“ ist eine Wechselpräposition: Wo? = Dativ, Wohin? = Akkusativ."
+  },
+  neben: {
+    title: "neben (Wechselpräposition)",
+    text: "„Neben“ ist eine Wechselpräposition: Wo? = Dativ, Wohin? = Akkusativ."
+  },
+  zwischen: {
+    title: "zwischen (Wechselpräposition)",
+    text: "„Zwischen“ ist eine Wechselpräposition: Wo? = Dativ, Wohin? = Akkusativ."
+  }
+};
+
+function getGrammarHint(prepLower, originalSentence) {
+  const base = PREP_RULES[prepLower];
+  if (!base) return null;
+
+  // Доп. строка с примером из текущего предложения: "... → <prep + следующий кусок>"
+  // Без сложного парсинга: берём фрагмент вокруг предлога.
+  const re = new RegExp(`\\b${escapeRegex(prepLower)}\\b`, "i");
+  const m = originalSentence.match(re);
+
+  let exampleLine = null;
+  if (m) {
+    const idx = m.index ?? -1;
+    if (idx >= 0) {
+      const after = originalSentence.slice(idx).split(/[,.!?]/)[0].trim();
+      // ограничим длину, чтобы не было полотна
+      const short = after.length > 60 ? after.slice(0, 57) + "…" : after;
+      exampleLine = `→ ${short}`;
+    }
+  }
+
+  return {
+    title: base.title,
+    text: base.text,
+    exampleLine
+  };
+}
+
 export default function App() {
   const [status, setStatus] = useState("idle"); // idle | loading | ready | error
   const [error, setError] = useState("");
@@ -126,6 +250,8 @@ export default function App() {
   const [examples, setExamples] = useState([]);
 
   const [score, setScore] = useState({ richtig: 0, gesamt: 0 });
+
+  const [hint, setHint] = useState(null); // {title, text, exampleLine} | null
 
   const lastPrepRef = useRef(null);
 
@@ -170,6 +296,7 @@ export default function App() {
     setIsCorrect(null);
     setExamples([]);
     setExamplesStatus("idle");
+    setHint(null);
 
     try {
       // подкачать очередь (важно: fillQueueIfNeeded должен делать "широкий" поиск, не по предлогу)
@@ -248,10 +375,8 @@ export default function App() {
       gesamt: s.gesamt + 1
     }));
 
-    // Если правильно — подтягиваем примеры с тем же предлогом (без теста)
-    if (ok) {
-      loadExamplesForPrep(question.correctLower, question.original);
-    }
+    loadExamplesForPrep(question.correctLower, question.original);
+    setHint(getGrammarHint(question.correctLower, question.original));
   }
 
   return (
@@ -312,7 +437,7 @@ export default function App() {
             <div style={styles.footer}>
               <div style={{ display: "flex", gap: 10 }}>
                 <button
-                  style={styles.btnGhost}
+                  style={styles.btnNext}
                   onClick={loadNextQuestion}
                   disabled={status === "loading"}
                 >
@@ -351,8 +476,17 @@ export default function App() {
               </div>
             </div>
 
+            {selected && hint && (
+              <div style={styles.hintBox}>
+                <div style={styles.hintTitle}>🧠 Grammatik-Hinweis</div>
+                <div style={styles.hintLine}><b>{hint.title}</b></div>
+                <div style={styles.hintLine}>{hint.text}</div>
+                {/* {hint.exampleLine && <div style={styles.hintExample}>{hint.exampleLine}</div>} */}
+              </div>
+            )}
+
             {/* Примеры (только если ответ правильный) */}
-            {isCorrect && (
+            {selected && (
               <div style={styles.examplesBox}>
                 <div style={styles.examplesTitle}>
                   Weitere Beispiele mit <b>{question.correctLower}</b>:
@@ -398,14 +532,16 @@ const styles = {
     placeItems: "center",
     padding: 16,
     fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
-    background: "#f6f7fb"
+    background: "#f6f7fb",
+    color: "#0f172a"   // 👈 ДОБАВИТЬ
   },
   card: {
     width: "min(920px, 100%)",
     background: "white",
     borderRadius: 16,
     padding: 18,
-    boxShadow: "0 12px 30px rgba(0,0,0,0.08)"
+    boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
+    color: "#0f172a"   // 👈 ДОБАВИТЬ
   },
   header: {
     display: "flex",
@@ -421,7 +557,8 @@ const styles = {
     fontWeight: 800,
     background: "#f0f2ff",
     padding: "8px 10px",
-    borderRadius: 12
+    borderRadius: 12,
+    color: "#0f172a"   // 👈 ДОБАВИТЬ
   },
   info: { padding: 14, borderRadius: 12, background: "#f7f7f7" },
   sentence: {
@@ -442,7 +579,8 @@ const styles = {
     padding: "12px 10px",
     fontSize: 16,
     fontWeight: 800,
-    cursor: "pointer"
+    cursor: "pointer",
+    color: "#0f172a"   // 👈 ДОБАВИТЬ
   },
   ok: { borderColor: "#34c759", background: "#eafff1" },
   bad: { borderColor: "#ff3b30", background: "#fff0ef" },
@@ -469,7 +607,19 @@ const styles = {
     padding: "10px 12px",
     fontWeight: 900,
     cursor: "pointer",
-    background: "white"
+    background: "white",
+    color: "#0f172a"   // 👈 ДОБАВИТЬ
+  },
+  btnNext: {
+    border: "2px solid rgb(221, 221, 221)",
+    borderRadius: "12px",
+    padding: "10px 12px",
+    fontWeight: "900",
+    cursor: "pointer",
+    background: "rgb(47 102 131)",
+    color: "rgb(15, 23, 42)",
+    color: "white",
+    fontSize: "20px",
   },
   feedback: { minHeight: 28, display: "flex", alignItems: "center" },
   tag: { padding: "6px 10px", borderRadius: 999, fontWeight: 900, fontSize: 13 },
@@ -489,5 +639,26 @@ const styles = {
 
   details: { marginTop: 12, opacity: 0.92 },
   original: { marginTop: 8, padding: 12, borderRadius: 12, background: "#fafafa", border: "1px solid #eee" },
-  errorBox: { padding: 14, borderRadius: 12, border: "1px solid #ff3b30", background: "#fff0ef" }
+  errorBox: { padding: 14, borderRadius: 12, border: "1px solid #ff3b30", background: "#fff0ef" },
+
+  hintBox: {
+    marginTop: 12,
+    padding: 14,
+    borderRadius: 12,
+    background: "#eef4ff",
+    border: "1px solid #cfe0ff"
+  },
+  hintTitle: {
+    fontWeight: 900,
+    marginBottom: 6
+  },
+  hintLine: {
+    lineHeight: 1.35,
+    marginTop: 2
+  },
+  hintExample: {
+    marginTop: 8,
+    fontWeight: 800,
+    opacity: 0.9
+  },
 };
