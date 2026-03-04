@@ -9,7 +9,7 @@ export default function App() {
     <Routes>
       <Route path="preposition-trainer/" element={<Home/>} />
       <Route path="/sprachbausteine" element={<Sprachbausteine />} />
-      <Route path="/nomen-verb" element={<NomenVerb exercises={exercises} />} />
+      <Route path="/nomen-verb" element={<NomenVerb exercises={exercises}  randomExercise={true} />} />
     </Routes>
   );
 }
