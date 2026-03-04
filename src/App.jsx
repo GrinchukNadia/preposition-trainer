@@ -529,11 +529,11 @@ const styles = {
   page: {
     minHeight: "100vh",
     display: "grid",
-    placeItems: "center",
+    placeItems: "start",
     padding: 16,
     fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
     background: "#f6f7fb",
-    color: "#0f172a"   // 👈 ДОБАВИТЬ
+    color: "#0f172a"  
   },
   card: {
     width: "min(920px, 100%)",
@@ -541,7 +541,7 @@ const styles = {
     borderRadius: 16,
     padding: 18,
     boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
-    color: "#0f172a"   // 👈 ДОБАВИТЬ
+    color: "#0f172a"   
   },
   header: {
     display: "flex",
@@ -558,7 +558,7 @@ const styles = {
     background: "#f0f2ff",
     padding: "8px 10px",
     borderRadius: 12,
-    color: "#0f172a"   // 👈 ДОБАВИТЬ
+    color: "#0f172a"   
   },
   info: { padding: 14, borderRadius: 12, background: "#f7f7f7" },
   sentence: {
@@ -580,7 +580,7 @@ const styles = {
     fontSize: 16,
     fontWeight: 800,
     cursor: "pointer",
-    color: "#0f172a"   // 👈 ДОБАВИТЬ
+    color: "#0f172a"   
   },
   ok: { borderColor: "#34c759", background: "#eafff1" },
   bad: { borderColor: "#ff3b30", background: "#fff0ef" },
@@ -608,7 +608,7 @@ const styles = {
     fontWeight: 900,
     cursor: "pointer",
     background: "white",
-    color: "#0f172a"   // 👈 ДОБАВИТЬ
+    color: "#0f172a"   
   },
   btnNext: {
     border: "2px solid rgb(221, 221, 221)",
@@ -617,7 +617,6 @@ const styles = {
     fontWeight: "900",
     cursor: "pointer",
     background: "rgb(47 102 131)",
-    color: "rgb(15, 23, 42)",
     color: "white",
     fontSize: "20px",
   },
